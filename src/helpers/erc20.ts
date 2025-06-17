@@ -14,6 +14,7 @@ import {
 
 import {
 	constants,
+	decimals,
 } from '@amxx/graphprotocol-utils'
 
 import {
@@ -24,7 +25,7 @@ export function fetchERC20(address: Address): ERC20Contract {
 	let contract = ERC20Contract.load(address)
 
 	if (contract == null) {
-		// let endpoint         = ERC20.bind(address)
+		let endpoint         = ERC20.bind(address)
 		// let name             = endpoint.try_name()
 		// let symbol           = endpoint.try_symbol()
 		// let decimals         = endpoint.try_decimals()
@@ -58,8 +59,32 @@ export function fetchERC20Balance(contract: ERC20Contract, account: Account | nu
 		balance                 = new ERC20Balance(id)
 		balance.contract        = contract.id
 		balance.account         = account ? account.id : null
-		balance.value           = constants.BIGDECIMAL_ZERO
-		balance.valueExact      = constants.BIGINT_ZERO
+
+		// Fetch balance from network
+		let endpoint = ERC20.bind(contract.id)
+
+		if (account == null) {
+			// Fetch total supply
+			let totalSupplyCall = endpoint.try_totalSupply()
+			if (totalSupplyCall.reverted) {
+				balance.value           = constants.BIGDECIMAL_ZERO
+				balance.valueExact      = constants.BIGINT_ZERO
+			} else {
+				balance.valueExact      = totalSupplyCall.value
+				balance.value           = decimals.toDecimals(totalSupplyCall.value, contract.decimals)
+			}
+		} else {
+			// Fetch account balance
+			let balanceCall = endpoint.try_balanceOf(account.id)
+			if (balanceCall.reverted) {
+				balance.value           = constants.BIGDECIMAL_ZERO
+				balance.valueExact      = constants.BIGINT_ZERO
+			} else {
+				balance.valueExact      = balanceCall.value
+				balance.value           = decimals.toDecimals(balanceCall.value, contract.decimals)
+			}
+		}
+
 		balance.save()
 	}
 
