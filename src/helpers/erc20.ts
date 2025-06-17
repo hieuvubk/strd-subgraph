@@ -61,7 +61,7 @@ export function fetchERC20Balance(contract: ERC20Contract, account: Account | nu
 		balance.account         = account ? account.id : null
 
 		// Fetch balance from network
-		let endpoint = ERC20.bind(contract.id)
+		let endpoint = ERC20.bind(Address.fromBytes(contract.id))
 
 		if (account == null) {
 			// Fetch total supply
@@ -75,7 +75,7 @@ export function fetchERC20Balance(contract: ERC20Contract, account: Account | nu
 			}
 		} else {
 			// Fetch account balance
-			let balanceCall = endpoint.try_balanceOf(account.id)
+			let balanceCall = endpoint.try_balanceOf(Address.fromBytes(account.id))
 			if (balanceCall.reverted) {
 				balance.value           = constants.BIGDECIMAL_ZERO
 				balance.valueExact      = constants.BIGINT_ZERO
